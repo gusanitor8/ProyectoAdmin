@@ -83,8 +83,8 @@ Base.metadata.create_all(bind=engine)
 def seed_db():
     db = SessionLocal()
     try:
-        # Si ya hay autores, asumimos que la BD está poblada y no repetimos
-        if db.query(AuthorDB).count() > 0:
+        # Si ya hay artículos, asumimos que la BD está poblada
+        if db.query(ArticleDB).count() > 0:
             return
 
         # Autores iniciales
@@ -259,7 +259,7 @@ def get_author(author_id: int, db: Session = Depends(get_db)):
 # Endpoints de Artículos
 # ------------------------------------------------
 
-def tags_to_str(tags: Optional[List[str]]) -> str:
+def tags_to_str(tags: Optional[Union[List[str], str]]) -> str:
     if not tags:
         return ""
     return ",".join(tags)
@@ -299,7 +299,7 @@ def create_article(article: ArticleCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_article)
 
-    art = Article.from_orm(db_article)
+    art = Article.model_validate(db_article)
     art.tags = tags_from_str(db_article.tags)
     return art
 
@@ -308,7 +308,7 @@ def get_article(article_id: int, db: Session = Depends(get_db)):
     a = db.query(ArticleDB).filter(ArticleDB.id == article_id).first()
     if not a:
         raise HTTPException(status_code=404, detail="Article not found")
-    art = Article.from_orm(a)
+    art = Article.model_validate(a)
     art.tags = tags_from_str(a.tags)
     return art
 
@@ -322,7 +322,7 @@ def list_articles_by_author(author_id: int, db: Session = Depends(get_db)):
     articles_db = db.query(ArticleDB).filter(ArticleDB.author_id == author_id).all()
     articles: List[Article] = []
     for a in articles_db:
-        art = Article.from_orm(a)
+        art = Article.model_validate(a)
         art.tags = tags_from_str(a.tags)
         articles.append(art)
     return articles
