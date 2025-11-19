@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+    networks:
+      - elk
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.12.0
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./elastic/filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./api/logs:/logs       # donde está api.log
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+
+  heartbeat:
+    image: docker.elastic.co/beats/heartbeat:8.12.0
+    container_name: heartbeat
+    user: root
+    volumes:
+      - ./elastic/heartbeat.yml:/usr/share/heartbeat/heartbeat.yml
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+
+  api:
+    build: ./api
+    container_name: api
+    ports:
+      - "8000:8000"
+    networks:
+      - elk
+
+networks:
+  elk:
+    driver: bridge

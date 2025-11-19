@@ -1,0 +1,12 @@
+filebeat.inputs:
+  - type: log
+    paths:
+      - /logs/api.log
+    encoding: utf-8
+    scan_frequency: 5s
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+
+setup.template.enabled: true
+setup.ilm.enabled: false
