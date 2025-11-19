@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16
+    container_name: jacks_db
+    environment:
+      POSTGRES_DB: jacks_cave
+      POSTGRES_USER: jacks
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - jacks-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jacks -d jacks_cave"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  api:
+    build: ./api
+    container_name: jacks_api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://jacks:secret@db:5432/jacks_cave
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - jacks-net
+
+volumes:
+  db_data:
+
+networks:
+  jacks-net:
+    driver: bridge
