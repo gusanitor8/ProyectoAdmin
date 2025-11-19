@@ -201,6 +201,14 @@ async def log_requests(request: Request, call_next):
     start_time = time.time()
     response = await call_next(request)
     duration_ns = int((time.time() - start_time) * 1_000_000_000)  # nanosegundos
+    
+    # Nivel de log según status
+    if response.status_code >= 500:
+        level = "ERROR"
+    elif response.status_code >= 400:
+        level = "WARN"
+    else:
+        level = "INFO"
 
     log_data = {
         "@timestamp": datetime.now(timezone.utc).isoformat(),
@@ -209,7 +217,7 @@ async def log_requests(request: Request, call_next):
         "event.duration": duration_ns,
         "url.path": request.url.path,
         "service.name": SERVICE_NAME,
-        "log.level": "INFO"
+        "log.level": level
     }
 
     logger.info(json.dumps(log_data))
@@ -326,3 +334,13 @@ def list_articles_by_author(author_id: int, db: Session = Depends(get_db)):
         art.tags = tags_from_str(a.tags)
         articles.append(art)
     return articles
+
+@app.delete("/articles/{article_id}", status_code=204)
+def delete_article(article_id: int, db: Session = Depends(get_db)):
+    article = db.query(ArticleDB).filter(ArticleDB.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    db.delete(article)
+    db.commit()
+    return
