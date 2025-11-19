@@ -1,0 +1,15 @@
+heartbeat.monitors:
+  - type: http
+    id: jacks-api-health
+    name: "Jack's Cave API Health"
+    schedule: '@every 10s'
+    hosts:
+      - "http://api:8000/health"
+    check.response:
+      status: 200
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+
+setup.kibana:
+  host: "http://kibana:5601"
